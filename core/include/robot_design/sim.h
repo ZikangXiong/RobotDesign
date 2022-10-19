@@ -7,6 +7,8 @@
 #include <Serialize/BulletFileLoader/btBulletFile.h>
 #include <btBulletDynamicsCommon.h>
 #include <memory>
+#include <list>
+#include <utility>
 #include <robot_design/prop.h>
 #include <robot_design/robot.h>
 #include <robot_design/types.h>
@@ -71,7 +73,7 @@ public:
 };
 
 struct BulletRobotWrapper {
-  BulletRobotWrapper(std::shared_ptr<const Robot> robot) : robot_(robot) {}
+  explicit BulletRobotWrapper(std::shared_ptr<const Robot> robot) : robot_(std::move(robot)) {}
   std::shared_ptr<const Robot> robot_;
   std::shared_ptr<btMultiBody> multi_body_;
   std::vector<std::shared_ptr<btCollisionShape>> col_shapes_;
@@ -85,8 +87,8 @@ struct BulletRobotWrapper {
 };
 
 struct BulletPropWrapper {
-  BulletPropWrapper(std::shared_ptr<const Prop> prop)
-      : prop_(prop), rigid_body_(), col_shape_(), col_object_() {}
+  explicit BulletPropWrapper(std::shared_ptr<const Prop> prop)
+      : prop_(std::move(prop)), rigid_body_(), col_shape_(), col_object_() {}
   std::shared_ptr<const Prop> prop_;
   std::shared_ptr<btRigidBody> rigid_body_;
   std::shared_ptr<btCollisionShape> col_shape_;
@@ -94,7 +96,7 @@ struct BulletPropWrapper {
 };
 
 struct BulletSavedState {
-  BulletSavedState() {}
+  BulletSavedState() = default;
   BulletSavedState(std::shared_ptr<btSerializer> serializer,
                    std::shared_ptr<bParse::btBulletFile> bullet_file)
       : serializer_(std::move(serializer)),
@@ -105,67 +107,66 @@ struct BulletSavedState {
 
 class BulletSimulation : public Simulation {
 public:
-  BulletSimulation(Scalar time_step = 1.0 / 240);
-  virtual ~BulletSimulation();
+  explicit BulletSimulation(Scalar time_step = 1.0 / 240);
+  ~BulletSimulation() override;
   BulletSimulation(const BulletSimulation &other) = delete;
   BulletSimulation &operator=(const BulletSimulation &other) = delete;
-  virtual Index addRobot(std::shared_ptr<const Robot> robot, const Vector3 &pos,
+  Index addRobot(std::shared_ptr<const Robot> robot, const Vector3 &pos,
                          const Quaternion &rot) override;
-  virtual Index addProp(std::shared_ptr<const Prop> prop, const Vector3 &pos,
+  Index addProp(std::shared_ptr<const Prop> prop, const Vector3 &pos,
                         const Quaternion &rot) override;
-  virtual void removeRobot(Index robot_idx) override;
-  virtual void removeProp(Index prop_idx) override;
-  virtual std::shared_ptr<const Robot> getRobot(Index robot_idx) const override;
-  virtual std::shared_ptr<const Prop> getProp(Index prop_idx) const override;
-  virtual Index getRobotCount() const override;
-  virtual Index getPropCount() const override;
-  virtual Index findRobotIndex(const Robot &robot) const override;
-  virtual Index findPropIndex(const Prop &prop) const override;
-  virtual void getLinkTransform(Index robot_idx, Index link_idx,
-                                Ref<Matrix4> transform) const override;
-  virtual void getPropTransform(Index prop_idx,
-                                Ref<Matrix4> transform) const override;
-  virtual void getLinkVelocity(Index robot_idx, Index link_idx,
-                               Ref<Vector6> vel) const override;
-  virtual Scalar getLinkMass(Index robot_idx, Index link_idx) const override;
-  virtual int getRobotDofCount(Index robot_idx) const override;
-  virtual void getJointPositions(Index robot_idx,
-                                 Ref<VectorX> pos) const override;
-  virtual void getJointVelocities(Index robot_idx,
-                                  Ref<VectorX> vel) const override;
-  virtual void getJointTargetPositions(Index robot_idx,
-                                       Ref<VectorX> target_pos) const override;
-  virtual void getJointTargetVelocities(Index robot_idx,
-                                        Ref<VectorX> target_vel) const override;
-  virtual void getJointMotorTorques(Index robot_idx,
-                                    Ref<VectorX> motor_torques) const override;
-  virtual void setJointTargets(Index robot_idx,
+  void removeRobot(Index robot_idx) override;
+  void removeProp(Index prop_idx) override;
+  [[nodiscard]] std::shared_ptr<const Robot> getRobot(Index robot_idx) const override;
+  [[nodiscard]] std::shared_ptr<const Prop> getProp(Index prop_idx) const override;
+  [[nodiscard]] Index getRobotCount() const override;
+  [[nodiscard]] Index getPropCount() const override;
+  [[nodiscard]] Index findRobotIndex(const Robot &robot) const override;
+  [[nodiscard]] Index findPropIndex(const Prop &prop) const override;
+  void getLinkTransform(Index robot_idx, Index link_idx,
+                        Ref<Matrix4> transform) const override;
+  void getPropTransform(Index prop_idx,
+                        Ref<Matrix4> transform) const override;
+  void getLinkVelocity(Index robot_idx, Index link_idx,
+                       Ref<Vector6> vel) const override;
+  [[nodiscard]] Scalar getLinkMass(Index robot_idx, Index link_idx) const override;
+  [[nodiscard]] int getRobotDofCount(Index robot_idx) const override;
+  void getJointPositions(Index robot_idx,
+                         Ref<VectorX> pos) const override;
+  void getJointVelocities(Index robot_idx,
+                          Ref<VectorX> vel) const override;
+  void getJointTargetPositions(Index robot_idx,
+                               Ref<VectorX> target_pos) const override;
+  void getJointTargetVelocities(Index robot_idx,
+                                Ref<VectorX> target_vel) const override;
+  void getJointMotorTorques(Index robot_idx,
+                            Ref<VectorX> motor_torques) const override;
+  void setJointTargets(Index robot_idx,
                                const Ref<const VectorX> &target) override;
-  virtual void
+  void
   setJointTargetPositions(Index robot_idx,
                           const Ref<const VectorX> &target_pos) override;
-  virtual void
+  void
   setJointTargetVelocities(Index robot_idx,
                            const Ref<const VectorX> &target_vel) override;
-  virtual void addJointTorques(Index robot_idx,
+  void addJointTorques(Index robot_idx,
                                const Ref<const VectorX> &torque) override;
-  virtual void addLinkForceTorque(Index robot_idx, Index link_idx,
+  void addLinkForceTorque(Index robot_idx, Index link_idx,
                                   const Ref<const Vector3> &force,
                                   const Ref<const Vector3> &torque) override;
-  virtual void getRobotWorldAABB(Index robot_idx, Ref<Vector3> lower,
+  void getRobotWorldAABB(Index robot_idx, Ref<Vector3> lower,
                                  Ref<Vector3> upper) const override;
-  virtual bool robotHasCollision(Index robot_idx) const override;
-  virtual Scalar getTimeStep() const override;
-  virtual Vector3 getGravity() const override;
-  virtual void setGravity(const Ref<const Vector3> &gravity) override;
-  virtual void saveState() override;
-  virtual void restoreState() override;
-  virtual void step() override;
+  [[nodiscard]] bool robotHasCollision(Index robot_idx) const override;
+  [[nodiscard]] Scalar getTimeStep() const override;
+  [[nodiscard]] Vector3 getGravity() const override;
+  void setGravity(const Ref<const Vector3> &gravity) override;
+  void saveState() override;
+  void restoreState() override;
+  void step() override;
 
 private:
   struct OverlapFilterCallback : public btOverlapFilterCallback {
-    virtual bool
-    needBroadphaseCollision(btBroadphaseProxy *proxy0,
+    bool needBroadphaseCollision(btBroadphaseProxy *proxy0,
                             btBroadphaseProxy *proxy1) const override;
   };
 
@@ -183,6 +184,13 @@ private:
   std::vector<BulletRobotWrapper> robot_wrappers_;
   std::vector<BulletPropWrapper> prop_wrappers_;
   BulletSavedState saved_state_;
+};
+
+class Trajectory {
+public:
+    std::list<Vector3> traj;
+
+    void add(btTransform trans);
 };
 
 } // namespace robot_design
