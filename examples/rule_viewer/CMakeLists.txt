@@ -31,5 +31,5 @@ target_link_libraries(${EXECUTABLE_NAME} PRIVATE
 if(MSVC)
   target_compile_options(${EXECUTABLE_NAME} PRIVATE /W4 /WX)
 else()
-  target_compile_options(${EXECUTABLE_NAME} PRIVATE -Wall -Werror)
+  target_compile_options(${EXECUTABLE_NAME} PRIVATE -Wall)
 endif()
