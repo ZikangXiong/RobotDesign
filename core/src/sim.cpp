@@ -574,13 +574,5 @@ namespace robot_design {
         }
     }
 
-    void Trajectory::add(btTransform trans) {
-        Scalar x = trans.getOrigin().getX();
-        Scalar y = trans.getOrigin().getY();
-        Scalar z = trans.getOrigin().getZ();
-
-        Vector3 pos = Vector3(x, y, z);
-        traj.push_back(pos);
-    }
 
 } // namespace robot_design

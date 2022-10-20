@@ -1,4 +1,6 @@
-import sys, os
+import os
+import sys
+
 base_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../')
 sys.path.append(base_dir)
 sys.path.append(os.path.join(base_dir, 'design_search'))
@@ -6,8 +8,9 @@ sys.path.append(os.path.join(base_dir, 'design_search'))
 from copy import deepcopy
 import numpy as np
 
-from design_search import presimulate, simulate, build_normalized_robot, make_initial_graph
+from design_search import build_normalized_robot, make_initial_graph
 import pyrobotdesign as rd
+
 
 def make_sim_fn(task, robot, robot_init_pos):
     sim = rd.BulletSimulation(task.time_step)
@@ -15,6 +18,7 @@ def make_sim_fn(task, robot, robot_init_pos):
     # Rotate 180 degrees around the y axis, so the base points to the right
     sim.add_robot(robot, robot_init_pos, rd.Quaterniond(0.0, 0.0, 1.0, 0.0))
     return sim
+
 
 def finalize_robot(robot):
     for link in robot.links:
@@ -28,7 +32,8 @@ def finalize_robot(robot):
         if link.joint_type == rd.JointType.NONE:
             link.joint_type = rd.JointType.FIXED
             link.joint_color = [1.0, 0.0, 1.0]
-        
+
+
 def build_robot(args):
     graphs = rd.load_graphs(args.grammar_file)
     rules = [rd.create_rule_from_graph(g) for g in graphs]
@@ -46,27 +51,29 @@ def build_robot(args):
 
     return robot
 
+
 def get_robot_state(sim, robot_id):
-    base_tf = np.zeros((4, 4), order = 'f')
+    base_tf = np.zeros((4, 4), order='f')
     sim.get_link_transform(robot_id, 0, base_tf)
     base_R = deepcopy(base_tf[0:3, 0:3])
     base_pos = deepcopy(base_tf[0:3, 3])
 
     # anguler velocity first and linear velocity next
-    base_vel = np.zeros(6, order = 'f')
+    base_vel = np.zeros(6, order='f')
     sim.get_link_velocity(robot_id, 0, base_vel)
-    
+
     n_dofs = sim.get_robot_dof_count(robot_id)
-    
-    joint_pos = np.zeros(n_dofs, order = 'f')
+
+    joint_pos = np.zeros(n_dofs, order='f')
     sim.get_joint_positions(robot_id, joint_pos)
-    
-    joint_vel = np.zeros(n_dofs, order = 'f')
+
+    joint_vel = np.zeros(n_dofs, order='f')
     sim.get_joint_velocities(robot_id, joint_vel)
-    
+
     state = np.hstack((base_R.flatten(), base_pos, base_vel, joint_pos, joint_vel))
 
     return state
+
 
 def presimulate(robot):
     """Find an initial position that will place the robot on the ground behind the
